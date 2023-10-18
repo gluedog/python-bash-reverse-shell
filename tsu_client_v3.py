@@ -17,9 +17,6 @@ C_RED = '\033[91m'
 C_GREEN = '\033[32m'
 C_YELLOW = '\033[33m'
 C_LYELLOW = '\033[37m'
-C_GRAY = '\033[90m'
-C_NEWDEX = '\033[35m'
-C_WITHDRAW = '\033[36m'
 
 C_END = '\033[0m'
 
@@ -40,8 +37,6 @@ def zxbd_input():
         return ""
     return userinput
 
-#def refresh(current_commander):
-    #readline.add_history(current_commander)
 
 def main():
     global host, port
@@ -53,8 +48,12 @@ def main():
 
     # connect to server
     print('Connecting to {}:{}...'.format(host,port))
-    s.connect((host, port))
-    s.settimeout(2)
+    try:
+        s.connect((host, port))
+    except socket.error as e:
+        print(f"Error connecting to server: {e}")
+        sys.exit(1)
+    s.settimeout(3)
 
     while True:
         try:
@@ -74,7 +73,7 @@ def main():
 
         except KeyboardInterrupt:
             s.sendall(control_c + b'\n') # pass through the keyboard interrupt
-            time.sleep(0.4)
+            time.sleep(0.5)
             continue
 
         if bytecode_msg == b"1exit":
@@ -83,11 +82,8 @@ def main():
 
         # send message to server. pressing enter and writing nothing will just keep on reading from the socket buffer
         if (bytecode_msg != b""):
-            #if rawmsg != " ":
-                #refresh(rawmsg) # Refresh the commander
             s.sendall(bytecode_msg + b'\n')
-            time.sleep(0.4)
+            time.sleep(0.5)
 
 if __name__ == '__main__':
     main()
-
