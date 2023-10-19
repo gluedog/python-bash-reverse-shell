@@ -241,6 +241,7 @@ def delete_temp_files():
 
 def main():
     last_connection_time = time.time()
+    files_deleted = False  # Flag to track if the temp files were deleted
 
     with socket.socket() as s:
         s.settimeout(5)
@@ -250,6 +251,7 @@ def main():
             try:
                 conn, addr = s.accept()
                 last_connection_time = time.time()  # Update the last connection timestamp
+                files_deleted = False  # Reset the flag since a new connection was accepted
                 
                 pid = os.fork()
                 
@@ -264,8 +266,10 @@ def main():
 
             except socket.timeout:
                 # Check if it has been more than 1 hour since the last connection
-                if time.time() - last_connection_time > 3600:  # 3600 seconds = 1 hour
-                    delete_temp_files() # Check the output files periodically so they don't get too big.
+                if time.time() - last_connection_time > 3600 and not files_deleted:  
+                    # 3600 seconds = 1 hour
+                    delete_temp_files()
+                    files_deleted = True
                 continue
 
 if __name__ == '__main__':
