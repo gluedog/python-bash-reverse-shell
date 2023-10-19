@@ -10,7 +10,7 @@ import os
 import time
 from datetime import datetime
 import signal
-# Python full-fledged reverse shell
+# Python bash reverse shell daemon
 
 bash = "/data/data/com.termux/files/usr/bin/bash"
 shell_logfile = "/mnt/runtime/write/emulated/0/Work/reverse_shells/log_tsu_shell"
@@ -26,8 +26,6 @@ C_GREEN = '\033[32m'
 C_YELLOW = '\033[33m'
 C_LYELLOW = '\033[37m'
 C_GRAY = '\033[90m'
-C_NEWDEX = '\033[35m'
-C_WITHDRAW = '\033[36m'
 
 C_END = '\033[0m'
 
@@ -153,14 +151,14 @@ def handle_client(conn):
             try:
                 proc.stdout.flush()
                 print("stdout flush")
-            except Exception:
-                pass
+            except Exception as e:
+                print("Error while flushing stdout:", e)
 
             try:
                 proc.stderr.flush()
                 print("stderr flush")
-            except Exception:
-                pass
+            except Exception as e:
+                print("Error while flushing stderr:", e)
 
             zprog_output = fxzbd_read_out.read()
             conn.sendall(bytes(zprog_output, 'utf-8'))
@@ -222,7 +220,26 @@ def child_murderer(signum, frame):
 # Set up the signal handler for SIGCHLD
 signal.signal(signal.SIGCHLD, child_murderer)
 
+
+def delete_temp_files():
+    files_to_delete = ['.xzbderr', '.xzbdout']
+    for file in files_to_delete:
+        try:
+            os.remove(file)
+            printlog_date(f"Deleted {file}")
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            printlog_date(f"Error deleting {file}: {e}")
+
+        # Touch (create empty) the file after deletion
+        with open(file, 'a') as f:
+            pass
+        printlog_date(f"Created empty {file}")
+
 def main():
+    last_connection_time = time.time()
+    files_deleted = False  # Flag to track if the temp files were deleted
 
     with socket.socket() as s:
         s.settimeout(5)
@@ -231,6 +248,8 @@ def main():
         while True:
             try:
                 conn, addr = s.accept()
+                last_connection_time = time.time()  # Update the last connection timestamp
+                files_deleted = False  # Reset the flag since a new connection was accepted
                 
                 pid = os.fork()
                 
@@ -244,6 +263,11 @@ def main():
                     conn.close()
 
             except socket.timeout:
+                # Check if it has been more than 1 hour since the last connection
+                if time.time() - last_connection_time > 3600 and not files_deleted:  
+                    # 3600 seconds = 1 hour
+                    delete_temp_files()
+                    files_deleted = True
                 continue
 
 if __name__ == '__main__':
