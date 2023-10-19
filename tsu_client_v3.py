@@ -3,6 +3,7 @@ import socket
 import time
 import sys
 import select
+import readline
 
 bash = "/data/data/com.termux/files/usr/bin/bash"
 host = '127.0.0.1'
@@ -28,7 +29,6 @@ shell_display_02 = C_END+" "+C_RED+"# "+C_END
 
 control_c = b'\x03'
 
-import readline
 
 def zxbd_input():
     try:
@@ -53,9 +53,11 @@ def main():
     except socket.error as e:
         print(f"Error connecting to server: {e}")
         sys.exit(1)
+
     s.settimeout(3)
 
     while True:
+        try:
         try:
             data = s.recv(10000) # buffer size is 10 kilo bytes
             print(data.decode(), end="")
